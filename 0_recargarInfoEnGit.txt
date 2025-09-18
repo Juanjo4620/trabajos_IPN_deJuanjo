@@ -1,0 +1,14 @@
+# 1. Entrar a la carpeta del proyecto
+cd /home/juanjoseguerreroperez/Documentos/IPN/04/AnalisisDisenoDeSistemas
+
+# 2. Verificar el estado de los archivos
+git status
+
+# 3. Agregar todos los archivos al commit
+git add .
+
+# 4. Hacer el commit con un mensaje
+git commit -m "Actualizar archivos de Actividad1"
+
+# 5. Subir los cambios a GitHub
+git push -u origin main
