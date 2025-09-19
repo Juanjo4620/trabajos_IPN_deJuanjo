@@ -1,11 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
+    <title>Mi portafolio</title>
+    <style>
+      body {
+          font-family: Arial, sans-serif;
+          background-color: #8813d6;
+          margin: 20px;
+      }
+
+      h1 {
+          color: #ffffff;
+          text-align: center;
+      }
+
+      p {
+          color: #ffffff;
+          line-height: 1.5;
+      }
+
+      a {
+          color: #ffffff;
+          text-decoration: none;
+      }
+
+      a:hover {
+          text-decoration: underline;
+      }
+
+      ul {
+          list-style-type: square;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>MI PORTAFOLIO</h1>
+
+    <nav>
+      <a href="#">INICIO</a> <br>
+      <a href="#galer">GALERIA</a> <br>
+      <a href="#Formulario">CONTACTO</a> <br><br><br>
+    </nav>
+
+    <section>
+      <h2>Sobre mí:</h2>
+      <p>Hola, soy Juanjo, un joven apasionado por el mundo de la electronica y el diseño de productos, estudiante de la carrera en Ingenieria en Inteligencia Artificial y originario de la sierra norte de Puebla. </p>
+
+      <ul>
+        <li>
+          Entre mis intereses se encuentran:
+          <ul>
+            <li>Programación en C</li>
+            <li>Medio ambiente</li>
+            <li>Diseño de circuitos</li>
+            <li>Manualidades</li>
+            <li>Canto</li>
+            <li>Guitarra</li>
+            <li>Diseño de productos domesticos, así como su reparación</li>
+            <li>Entre otros</li>
+          </ul>
+        </li>
+      </ul>
+
+      <img src="perfilPersonal.jpeg" alt="Foto de Juanjo" width="200" height="200">
+    </section>
+
+        <!-- Galería de imágenes -->
+    <section id="galer">
+        <figure>
+            <img src="carrito.jpeg" alt="Descripción 1" width="200">
+            <figcaption>Imagen 1</figcaption>
+ 
+            <img src="Calabaza.jpeg" alt="Descripción 2" width="200">
+            <figcaption>Imagen 2</figcaption>
+
+            <img src="Reloj.jpeg" alt="Descripción 3" width="200">
+            <figcaption>Imagen 3</figcaption>
+        </figure>
+
+            <h2>Video de ejemplo1</h2>
+            <iframe width="560" height="315" 
+                src="https://www.youtube.com/embed/uSvdfM2-a5w"
+                title="YouTube video"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+
+            <h2>Audio de ejemplo</h2>
+            <audio controls>
+                <source src="noGod.mp3" type="audio/mpeg">
+            </audio>
+    </section>
+
+    <form id="Formulario">
+      <h2>Formulario de contacto</h2>
+      <label for="name">Nombre:</label><br>
+      <input type="text" id="name" name="name" required><br>
+
+      <label for="email">Correo Electrónico:</label><br>
+      <input type="email" id="email" name="email" required><br>
+
+      <label for="message">Mensaje:</label><br>
+      <textarea id="message" name="message" rows="4" cols="50" required></textarea><br>
+
+      <input type="submit" value="Enviar">
+      <input type="reset" value="Reset"><br><br>
+    </form>   
+
+    <footer>
+      <ul>
+        <li>Juan José Guerrero Pérez</li>
+        <li>guerrejuanjose1@gmail.com</li>
+        <li>Septiempre 2025</li>
+      </ul>
+    </footer>
+      
+  </body>
 </html>
