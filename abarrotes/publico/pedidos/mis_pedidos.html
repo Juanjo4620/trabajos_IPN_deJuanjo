@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Mis pedidos</title>
+  <link rel="stylesheet" href="../recursos/estilos.css">
+  <!-- interfaz.js movido al final (Solución A) -->
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Mis pedidos</h1>
+      <nav>
+        <a href="/abarrotes/publico/">Inicio</a>
+        <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+        <a href="/abarrotes/publico/pedidos/carrito.html">Carrito</a>
+        <span id="rolUsuario" class="badge"></span>
+        <button id="btnSalir" style="display:none;">Salir</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Historial</h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Total</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+
+      <div id="sinPedidos" style="margin-top:8px; display:none;">
+        <span class="badge">Aún no tienes pedidos.</span>
+      </div>
+
+      <div id="detalleWrap" style="margin-top:16px; display:none;">
+        <h3>Detalle del pedido</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Producto</th><th>Cantidad</th><th>Precio unit.</th><th>Subtotal</th></tr>
+            </thead>
+            <tbody id="detalleFilas"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <pre id="salida" class="code-block" style="margin-top:12px;"></pre>
+    </section>
+  </main>
+
+  <!-- Cargar la librería ANTES del script inline -->
+  <script src="../recursos/interfaz.js"></script>
+  <script>
+    configurarSesionUI('rolUsuario','btnSalir','/abarrotes/publico/');
+
+    const filas = document.getElementById('filas');
+    const salida = document.getElementById('salida');
+    const sinPedidos = document.getElementById('sinPedidos');
+    const detalleWrap = document.getElementById('detalleWrap');
+    const detalleFilas = document.getElementById('detalleFilas');
+
+    async function cargar() {
+      const r = await fetch('/abarrotes/api/pedidos', { headers: headersAutenticados() });
+      const lista = await r.json();
+      if (!r.ok) {
+        toast((lista && (lista.mensaje || lista.error)) || 'Error cargando pedidos', 'err');
+        return;
+      }
+
+      const arr = Array.isArray(lista) ? lista : [];
+      if (arr.length === 0) {
+        filas.innerHTML = '';
+        sinPedidos.style.display = 'block';
+        detalleWrap.style.display = 'none';
+        salida.textContent = '';
+        return;
+      } else {
+        sinPedidos.style.display = 'none';
+      }
+
+      const ultimo = localStorage.getItem('ultimo_pedido_id');
+
+      filas.innerHTML = arr.map(p => `
+        <tr data-id="${p.id}" ${ultimo && String(p.id)===ultimo ? 'style="outline:2px solid var(--accent);"' : ''}>
+          <td>${p.id}</td>
+          <td>$${Number(p.total).toFixed(2)}</td>
+          <td>${p.estado}</td>
+          <td>${p.creado_en}</td>
+          <td><button class="secondary btn-ver" data-id="${p.id}">Ver</button></td>
+        </tr>
+      `).join('');
+
+      // si hay último, lo mostramos de una vez
+      if (ultimo) {
+        ver(Number(ultimo));
+        // opcional: localStorage.removeItem('ultimo_pedido_id');
+      }
+    }
+    cargar();
+
+    // Delegación para botones "Ver"
+    filas.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-ver');
+      if (!btn) return;
+      const id = Number(btn.dataset.id);
+      ver(id);
+    });
+
+    async function ver(id) {
+      const r = await fetch('/abarrotes/api/pedidos/' + id, { headers: headersAutenticados() });
+      const j = await r.json();
+      salida.textContent = JSON.stringify(j, null, 2);
+
+      if (!r.ok) {
+        detalleWrap.style.display = 'none';
+        toast((j && (j.mensaje || j.error)) || 'No se pudo cargar el detalle', 'err');
+        return;
+      }
+
+      // Render amigable del detalle (si viene la propiedad items)
+      if (j && Array.isArray(j.items)) {
+        detalleWrap.style.display = 'block';
+        detalleFilas.innerHTML = j.items.map(it => `
+          <tr>
+            <td>${it.producto_nombre ?? ('#'+it.producto_id)}</td>
+            <td>${it.cantidad}</td>
+            <td>$${Number(it.precio_unitario).toFixed(2)}</td>
+            <td>$${Number(it.subtotal).toFixed(2)}</td>
+          </tr>
+        `).join('');
+      } else {
+        detalleWrap.style.display = 'none';
+      }
+
+      // resalta la fila seleccionada
+      document.querySelectorAll('#filas tr').forEach(tr => tr.style.outline = '');
+      const trSel = document.querySelector(`#filas tr[data-id="${id}"]`);
+      if (trSel) trSel.style.outline = '2px solid var(--accent)';
+    }
+  </script>
+</body>
+</html>

@@ -12,3 +12,8 @@ git commit -m "Actualizar archivos de Actividad1"
 
 # 5. Subir los cambios a GitHub
 git push -u origin main
+
+git config --global user.name "Juan Jose Guerrero Perez"
+git config --global user.email ""
+
+https://github.com/Juanjo4620/trabajos_IPN_deJuanjo/tree/main/4_actividadUno_HTML
