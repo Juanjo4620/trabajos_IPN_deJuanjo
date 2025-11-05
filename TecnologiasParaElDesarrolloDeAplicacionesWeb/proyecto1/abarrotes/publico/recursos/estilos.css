@@ -1,0 +1,149 @@
+:root {
+  --bg: #0b1020;
+  --card: #111831;
+  --muted: #9fb3c8;
+  --accent: #6aa6ff;
+  --ok: #38c172;
+  --warn: #ffb100;
+  --err: #e3342f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, Segoe UI, Roboto, Ubuntu;
+  background: linear-gradient(180deg, #0b1020, #0e1428);
+  color: #e6eef7;
+  margin: 0;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid #24314d;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+h1, h2 {
+  margin: 0 0 12px;
+}
+
+label {
+  display: block;
+  margin: 10px 0 6px;
+  color: var(--muted);
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #30405f;
+  background: #0a1224;
+  color: #e6eef7;
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  color: #061024;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #223055;
+  color: #cbd6e2;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border-bottom: 1px solid #25324a;
+  padding: 10px;
+  text-align: left;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1c2542;
+  color: #a6b8d8;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+/* --- Notificaciones tipo toast --- */
+.toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  background: #17203a;
+  border: 1px solid #2b3a5e;
+  color: #e6eef7;
+  padding: 10px 14px;
+  border-radius: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: .25s;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Estados personalizados */
+.toast.ok {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.toast.warn {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.toast.err {
+  border-color: var(--err);
+  color: var(--err);
+}
+
+.toast.info {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.link {
+  color: #9bc2ff;
+  text-decoration: none;
+}
+.link:hover {
+  text-decoration: underline;
+}

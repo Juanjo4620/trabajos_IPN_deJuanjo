@@ -1,0 +1,117 @@
+Parte 1: Configuración de Virtual Hosts
+    1. Abre el archivo de configuración de Apache: C:\xampp\apache\conf\extra\httpd-vhosts.conf
+
+    2. Agrega la configuración para un nuevo proyecto:
+<VirtualHost *:80>
+DocumentRoot DC:/xampp/htdocs/practica1D ServerName practica1.local
+ErrorLog Dlogs/practica1-error.logD CustomLog Dlogs/practica1-access.logD common
+</VirtualHost>
+
+    3. Edita el archivo de hosts de Windows para reconocer el dominio local: C:\Windows\System32\drivers\etc\hosts
+Añade al final:
+127.0.0.1	practica1.local
+
+    4. Crea la carpeta del proyecto: C:\xampp\htdocs\practica1
+
+Dentro, un archivo index.php con:
+
+<?php
+echo DBienvenido a la Práctica 1 en XAMPPD;
+?>
+
+    5. Reinicia Apache y abre en el navegador: http://practica1.local
+
+    6. Crear un archivo llamado .htaccess en la carpeta de tu proyecto y agrega la siguiente línea
+Options -Indexes
+
+    7. Reinicia Apache y abre en el navegador
+
+Parte 2: Base de datos en MySQL
+    1. Accede a phpMyAdmin: http://localhost/phpmyadmin/
+
+    2. Crea una base de datos llamada tienda.
+
+    3. Ejecuta este SQL para crear una tabla y datos de prueba: CREATE SCHEMA tienda;
+USE tienda;
+CREATE TABLE productos (
+id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) NOT NULL, precio DECIMAL(10,2) NOT NULL
+);
+
+    4. En practica1, crea un archivo conexion.php:
+
+<?php
+$servidor = DlocalhostD;
+$usuario = DrootD;
+$password = DD;
+$base_datos = DtiendaD;
+// Crear conexión
+$conexion = new mysqli($servidor, $usuario, $password, $base_datos);
+// Verificar conexión
+if ($conexion->connect_error) {
+die(DError en la conexión: D . $conexion->connect_error);
+} else {
+echo DConexión exitosa a la base de datos.D;
+}
+?>
+
+    5. Crea un nuevo archivo llamado insertar.php:
+
+<?php
+include 'conexion.php';
+$nombre = DLaptopD;
+$precio = D15000.00D;
+$sql = DINSERT INTO productos (nombre, precio) VALUES ('$nombre', '$precio')D; if ($conexion->query($sql) === TRUE) {
+echo DProducto registrado correctamente.D;
+} else {
+echo DError: D . $conexion->error;
+}
+
+$conexion->close();
+?>
+
+    6. Actualiza el contenido del archivo index.php
+	<?php
+	include 'conexion.php';
+	$sql = DSELECT * FROM productosD;
+	$resultado = $conexion->query($sql); if ($resultado->num_rows > 0) {
+	while ($fila = $resultado->fetch_assoc()) {
+	echo DID: D . $fila[DidD] . D - Nombre: D . $fila[DnombreD] . D - Precio: D
+	. $fila[DprecioD] . D<br>D;
+	}
+	} else {
+	  echo DNo hay productos registrados.D;
+	}
+	$conexion->close();
+	?>
+
+
+Parte 3: Seguridad adicional
+    1. Activar contraseñas de MySQL
+    -- Crear usuario con contraseña
+    CREATE USER 'usuario_tienda'@'localhost' IDENTIFIED BY 'segura123';
+    -- Otorgar privilegios solo sobre la base de datos DtiendaD
+    GRANT ALL PRIVILEGES ON tienda.* TO 'usuario_tienda'@'localhost';
+    -- Aplicar cambios de privilegios FLUSH PRIVILEGES;
+        ◦ Cambia conexion.php por los nuevos valores
+
+    2. Restringir acceso a phpMyAdmin
+        ◦ Abre el archivo: C:\xampp\apache\conf\extra\httpd-xampp.conf
+        ◦ Busca la sección de phpMyAdmin y reemplaza:
+	Require all granted por:
+	Require local
+        ◦ Esto hará que solo se pueda entrar a phpMyAdmin desde la misma computadora.
+
+    3. Logs de Apache
+        ◦ Revisa los registros en:
+        ◦ C:/xampp/apache/logs/practica1-error.log
+        ◦ C:/xampp/apache/logs/practica1-access.log
+
+Parte 4: Validación final
+    • Ingresa a http://practica1.local/ y verifica que se muestren los productos.
+    • Intenta acceder a phpMyAdmin desde otro dispositivo de la red (no debería dejarte).
+    • Comprueba que el nuevo usuario de base de datos funciona y el root está protegido.
+
+Para entregar:
+    • Crea un reporte en PDF con capturas de pantalla de cada una de las etapas de esta práctica
+    • Crea una cuenta en github y sube tu proyecto en una carpeta llamada Lab1
+    • Adjunta el reporte y tu enlace a tu proyecto de github

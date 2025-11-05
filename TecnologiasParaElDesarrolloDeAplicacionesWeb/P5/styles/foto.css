@@ -1,0 +1,28 @@
+#modal-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.8);
+  display: none; /* 🔹 Esto es clave */
+  justify-content: center;
+  align-items: center;
+  z-index: 10; /* 🔹 Para estar encima solo cuando visible */
+}
+
+#modal-view img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 10px;
+}
+
+/* Cuando se muestra */
+#modal-view:not(.hidden) {
+  display: flex;
+}
+
+/* Clase que se usa para ocultar */
+.hidden {
+  display: none;
+}

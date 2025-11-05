@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Editar producto</title>
+  <link rel="stylesheet" href="../recursos/estilos.css">
+  <script src="../recursos/interfaz.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Abarrotes en Línea</h1>
+    <nav>
+      <a href="/abarrotes/publico/">Inicio</a>
+      <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+      <a href="/abarrotes/publico/productos/crear.html">Crear producto</a>
+      <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+      <a href="/abarrotes/publico/usuarios/inicio_sesion.html">Inicio de sesión</a>
+      <span id="rolUsuario" class="badge"></span>
+      <button id="btnSalir" style="display:none;">Salir</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Editar / Eliminar producto</h2>
+
+      <form id="formEditar" class="form-grid">
+        <input type="hidden" name="id" />
+        <label>Nombre
+          <input name="nombre" required>
+        </label>
+        <label>Descripción
+          <textarea name="descripcion"></textarea>
+        </label>
+        <label>Precio
+          <input name="precio" type="number" step="0.01" required>
+        </label>
+        <label>Existencias
+          <input name="existencias" type="number" value="0">
+        </label>
+        <label>Categoría
+          <input name="categoria">
+        </label>
+        <div class="toolbar">
+          <button>Guardar cambios</button>
+          <button id="btnEliminar" type="button" class="secondary">Eliminar</button>
+        </div>
+      </form>
+
+      <pre id="salida" class="code-block"></pre>
+    </section>
+  </main>
+
+  <script>
+    const salida = document.getElementById('salida');
+    const form = document.getElementById('formEditar');
+    const id = new URLSearchParams(location.search).get('id');
+    const token = localStorage.getItem('token');
+    const rol = localStorage.getItem('rol') || 'comprador';
+    const badgeRol = document.getElementById('rolUsuario');
+    const btnSalir = document.getElementById('btnSalir');
+
+    // Mostrar rol / botón salir
+    if (rol) { badgeRol.textContent = rol; btnSalir.style.display = 'inline-block'; }
+    btnSalir.addEventListener('click', () => {
+      localStorage.removeItem('token'); localStorage.removeItem('rol');
+      location.href = '/abarrotes/publico/';
+    });
+
+    // 🔒 Si NO es tiendero, bloqueamos edición/eliminación
+    if (rol !== 'tiendero') {
+      form.remove();
+      document.querySelector('.card').insertAdjacentHTML(
+        'beforeend',
+        '<p class="badge">⚠️ Solo tiendero puede editar/eliminar.</p>'
+      );
+    } else {
+      // ✅ Tiendero: flujo normal
+      async function cargar() {
+        const r = await fetch(`/abarrotes/api/productos/${id}`);
+        const p = await r.json();
+        if (p && !p.error && !p.mensaje) {
+          // Mapeo de claves en español -> inputs
+          const mapa = {
+            id: 'id',
+            nombre: 'nombre',
+            descripcion: 'descripcion',
+            precio: 'precio',
+            existencias: 'existencias',
+            categoria: 'categoria'
+          };
+          for (const k in mapa) {
+            if (form[mapa[k]] !== undefined) {
+              form[mapa[k]].value = (p[k] ?? '');
+            }
+          }
+        } else {
+          if (typeof toast === 'function') toast(p.mensaje || p.error || 'No se pudo cargar el producto');
+        }
+      }
+      cargar();
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const datos = Object.fromEntries(new FormData(form).entries());
+        const r = await fetch(`/abarrotes/api/productos/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (token ?? '')
+          },
+          body: JSON.stringify(datos)
+        });
+        const j = await r.json();
+        salida.textContent = JSON.stringify(j, null, 2);
+        if (r.ok) {
+          if (typeof toast === 'function') toast('Producto actualizado ✅');
+          // Opcional: volver al listado
+          // setTimeout(()=>location.href='/abarrotes/publico/productos/listar.html', 1200);
+        } else {
+          if (typeof toast === 'function') toast(j.mensaje || j.error || 'Error al actualizar ❌');
+        }
+      });
+
+      document.getElementById('btnEliminar').addEventListener('click', async () => {
+        if (!confirm('¿Eliminar producto?')) return;
+        const r = await fetch(`/abarrotes/api/productos/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + (token ?? '') }
+        });
+        const j = await r.json();
+        salida.textContent = JSON.stringify(j, null, 2);
+        if (r.ok) {
+          if (typeof toast === 'function') toast('Producto eliminado 🗑️');
+          setTimeout(()=>location.href='/abarrotes/publico/productos/listar.html', 1200);
+        } else {
+          if (typeof toast === 'function') toast(j.mensaje || j.error || 'Error al eliminar ❌');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

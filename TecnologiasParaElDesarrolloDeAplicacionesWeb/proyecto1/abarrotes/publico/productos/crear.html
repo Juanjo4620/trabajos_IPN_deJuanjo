@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Crear producto</title>
+  <link rel="stylesheet" href="../recursos/estilos.css">
+  <script src="../recursos/interfaz.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Abarrotes en Línea</h1>
+    <nav>
+      <a href="/abarrotes/publico/">Inicio</a>
+      <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+      <a href="/abarrotes/publico/productos/crear.html">Crear producto</a>
+      <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+      <a href="/abarrotes/publico/usuarios/inicio_sesion.html">Inicio de sesión</a>
+      <span id="rolUsuario" class="badge"></span>
+      <button id="btnSalir" style="display:none;">Salir</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Crear producto</h2>
+
+      <form id="formCrear" class="form-grid">
+        <label>Nombre
+          <input name="nombre" required>
+        </label>
+        <label>Descripción
+          <textarea name="descripcion"></textarea>
+        </label>
+        <label>Precio
+          <input name="precio" type="number" step="0.01" required>
+        </label>
+        <label>Existencias
+          <input name="existencias" type="number" value="0">
+        </label>
+        <label>Categoría
+          <input name="categoria">
+        </label>
+        <button>Crear</button>
+      </form>
+
+      <pre id="salida" class="code-block"></pre>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('formCrear');
+    const salida = document.getElementById('salida');
+    const badgeRol = document.getElementById('rolUsuario');
+    const btnSalir = document.getElementById('btnSalir');
+
+    // Mostrar rol si está guardado
+    const rolGuardado = localStorage.getItem('rol');
+    if (rolGuardado) {
+      badgeRol.textContent = rolGuardado;
+      btnSalir.style.display = 'inline-block';
+    }
+
+    btnSalir.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('rol');
+      location.href = '/abarrotes/publico/';
+    });
+
+    // 🔒 Verificación de rol
+    const rol = rolGuardado || 'comprador';
+    if (rol !== 'tiendero') {
+      form.style.display = 'none';
+      document.querySelector('.card').insertAdjacentHTML(
+        'beforeend',
+        '<p class="badge">⚠️ Solo tiendero puede crear productos.</p>'
+      );
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = localStorage.getItem('token');
+      const datos = Object.fromEntries(new FormData(form).entries());
+
+      const resp = await fetch('/abarrotes/api/productos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (token ?? '')
+        },
+        body: JSON.stringify(datos)
+      });
+
+      const json = await resp.json();
+      salida.textContent = JSON.stringify(json, null, 2);
+
+      if (json.id) {
+        if (typeof toast === 'function') toast('Producto creado ✅');
+        setTimeout(() => location.href = '/abarrotes/publico/productos/listar.html', 1500);
+      } else {
+        if (typeof toast === 'function') toast(json.mensaje || json.error || 'Error al crear ❌');
+      }
+    });
+  </script>
+</body>
+</html>
