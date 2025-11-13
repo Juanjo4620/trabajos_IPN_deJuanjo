@@ -1,0 +1,63 @@
+/* Reset básico */
+* {box-sizing: border-box; margin: 0; padding: 0}
+html,body{height:100%; font-family: Arial, Helvetica, sans-serif; background:#faf7f2; color:#2b2b2b}
+
+header{background:#5a3826; color:#fff; padding:16px}
+header h1{margin:0; text-align:center}
+.main-nav{list-style:none; display:flex; gap:20px; justify-content:center; margin-top:8px}
+.main-nav a{color:#fff; text-decoration:none; padding:8px 12px}
+
+.hero{background:#f4ead8; text-align:center; padding:40px 20px}
+.hero h2{margin-bottom:8px}
+
+.flex-demo{padding:28px; background:linear-gradient(180deg,#fffdfa,#fbf3ea); border-radius:10px; margin:18px 12px}
+.flex-demo h3{text-align:center; margin-bottom:14px}
+.flex-container{display:flex; gap:12px; justify-content:space-between; align-items:stretch; flex-wrap:wrap}
+.flex-container .box{background:linear-gradient(180deg,#ffffff,#fbf7f2); border:1px solid #e6dcd2; padding:18px; flex:1 1 160px; text-align:left; min-width:160px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+
+.menu{padding:24px}
+.cards{display:flex; gap:16px; justify-content:space-between; flex-wrap:wrap}
+.card{background:#fff; border-radius:8px; padding:16px; flex:1 1 220px; min-width:200px; box-shadow:0 2px 4px rgba(0,0,0,0.05)}
+.card-media{height:140px; overflow:hidden; border-radius:6px; margin-bottom:12px; background:#f2ebe1; display:flex; align-items:center; justify-content:center}
+.card-media img{width:100%; height:100%; object-fit:cover; display:block}
+
+.layout-demo{padding:24px}
+.page-layout{display:flex; gap:16px; align-items:flex-start}
+.sidebar{width:200px; background:#fff; padding:12px; border-radius:6px}
+.main-content{flex:1 1 auto; background:#fff; padding:16px; border-radius:6px}
+
+footer{background:#5a3826; color:#fff; text-align:center; padding:16px; position:static}
+
+/* Header/Footer alturas fijas indicadas en la práctica */
+header, footer{height:auto}
+
+/* Media queries para responsividad según la práctica */
+@media (max-width:1024px){
+  .cards{gap:12px}
+}
+
+@media (max-width:768px){
+  .main-nav{flex-direction:column; align-items:center}
+  .page-layout{flex-direction:column}
+  .sidebar{width:100%}
+}
+
+@media (max-width:600px){
+  .flex-container{flex-direction:column; align-items:stretch}
+  /* Cuando las cajas se apilan, que su altura se ajuste al contenido */
+  .flex-container .box{flex:0 0 auto; width:100%; min-width:unset; text-align:left}
+}
+
+@media (max-width:500px){
+  .main-nav{width:100%}
+  .main-nav li{width:100%; text-align:center}
+  .main-nav a{display:block}
+  .cards{flex-direction:column}
+}
+
+@media (max-width:480px){
+  body{font-size:14px}
+}
+
+/* Accesibilidad ligera */
+a:focus{outline:3px solid #ffdca8; outline-offset:2px}
