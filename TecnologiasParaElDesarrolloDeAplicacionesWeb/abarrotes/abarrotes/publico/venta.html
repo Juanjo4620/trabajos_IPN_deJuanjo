@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <title>Venta de productos</title>
+  <link rel="stylesheet" href="./recursos/estilos.css">
+  <script src="./recursos/interfaz.js" defer></script>
+</head>
+
+<body>
+  <header>
+    <h1>Abarrotes en Línea</h1>
+    <nav>
+      <div class="nav-links">
+        <a href="/abarrotes/publico/">Inicio</a>
+        <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+        <a href="/abarrotes/publico/venta.html">Venta</a>
+        <a href="/abarrotes/publico/pedidos/carrito.html">Carrito</a>
+        <a href="/abarrotes/publico/contacto.html">Contacto</a>
+        <div class="dropdown">
+          <button class="dropbtn">Usuario ▾</button>
+          <div class="dropdown-menu">
+            <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+            <a href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+            <a href="/abarrotes/publico/pedidos/misPedidos.html">Mis pedidos</a>
+            <a href="#" id="btnSalir">Salir</a>
+          </div>
+        </div>
+        <span id="rolUsuario" class="badge"></span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Venta de productos</h2>
+
+      <form id="formVenta">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Existencias</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody id="filas"></tbody>
+          </table>
+        </div>
+
+        <div class="toolbar">
+          <strong>Total: $<span id="total">0.00</span></strong>
+          <label style="margin-left:auto;">
+            <input id="chkTerminos" type="checkbox"> Acepto términos y condiciones
+          </label>
+        </div>
+
+        <label for="inpDireccion">Dirección de envío
+          <input id="inpDireccion" name="direccion_envio" placeholder="Calle #, colonia, ciudad">
+        </label>
+
+        <div class="toolbar">
+          <button type="submit">Enviar</button>
+          <button type="button" id="btnCancelar" class="secondary">Cancelar</button>
+        </div>
+      </form>
+
+      <pre id="salida" class="code-block"></pre>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      configurarSesionUI('rolUsuario', 'btnSalir', '/abarrotes/publico/');
+      initDropdowns();
+      mostrarUsuarioEnBarra('rolUsuario');
+
+      // Sólo compradores pueden comprar
+      if (!protegerPagina()) return;
+      if (obtenerRol() !== 'comprador') {
+        document.getElementById('formVenta').remove();
+        document.querySelector('.card').insertAdjacentHTML('beforeend', '<p class="badge">⚠️ Solo el rol comprador puede realizar compras.</p>');
+        return;
+      }
+
+      iniciarTemporizadorInactividad(60000);
+
+      const filas = document.getElementById('filas');
+      const totalEl = document.getElementById('total');
+      const salida = document.getElementById('salida');
+      const form = document.getElementById('formVenta');
+      const btnCancelar = document.getElementById('btnCancelar');
+      const chkTerminos = document.getElementById('chkTerminos');
+
+      btnCancelar.addEventListener('click', () => { form.reset(); calcularTotal(); });
+
+      function calcularTotal() {
+        let total = 0;
+        document.querySelectorAll('tr[data-id]').forEach(tr => {
+          const chk = tr.querySelector('.sel');
+          const qty = tr.querySelector('.qty');
+          const price = Number(tr.dataset.precio);
+          const q = chk.checked ? Math.max(1, Number(qty.value || 1)) : 0;
+          total += price * q;
+        });
+        totalEl.textContent = total.toFixed(2);
+      }
+
+      filas.addEventListener('change', e => {
+        const tr = e.target.closest('tr[data-id]');
+        if (!tr) return;
+        const chk = tr.querySelector('.sel');
+        const qty = tr.querySelector('.qty');
+        if (e.target.classList.contains('sel')) {
+          qty.disabled = !chk.checked;
+          if (chk.checked && Number(qty.value) <= 0) qty.value = 1;
+        }
+        if (e.target.classList.contains('qty')) {
+          const max = Number(qty.max || '9999');
+          qty.value = Math.min(Math.max(1, Number(qty.value || 1)), max);
+        }
+        calcularTotal();
+      });
+
+      async function cargarProductos() {
+        const r = await fetch('/abarrotes/api/productos');
+        const list = await r.json();
+        filas.innerHTML = (Array.isArray(list) ? list : []).map(p => `
+          <tr data-id="${p.id}" data-precio="${Number(p.precio)}">
+            <td><input type="checkbox" class="sel"></td>
+            <td>${p.nombre}</td>
+            <td>$${Number(p.precio).toFixed(2)}</td>
+            <td>${p.existencias}</td>
+            <td><input class="qty" type="number" min="1" max="${p.existencias}" value="1" disabled style="width:90px"></td>
+          </tr>
+        `).join('');
+        calcularTotal();
+      }
+      cargarProductos();
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = obtenerToken();
+        if (!token) { toast('Inicia sesión para comprar', 'warn'); return; }
+        if (!chkTerminos.checked) { toast('Debes aceptar los términos', 'warn'); return; }
+
+        const items = [];
+        document.querySelectorAll('tr[data-id]').forEach(tr => {
+          const chk = tr.querySelector('.sel');
+          const qty = tr.querySelector('.qty');
+          if (chk.checked) {
+            const id = Number(tr.dataset.id);
+            const q = Math.max(1, Number(qty.value || 1));
+            items.push({ producto_id: id, cantidad: q });
+          }
+        });
+
+        if (!items.length) { toast('Selecciona al menos un producto', 'warn'); return; }
+
+        const datos = Object.fromEntries(new FormData(form).entries());
+        try {
+          const r = await fetch('/abarrotes/api/pedidos', {
+            method: 'POST',
+            headers: headersAutenticados(),
+            body: JSON.stringify({ ...datos, items })
+          });
+          const j = await r.json();
+          salida.textContent = JSON.stringify(j, null, 2);
+          if (r.status === 201 && j.pedido_id) {
+            toast('Pedido realizado ✅', 'ok');
+            localStorage.setItem('ultimo_pedido_id', String(j.pedido_id));
+            setTimeout(() => location.href = '/abarrotes/publico/pedidos/misPedidos.html', 900);
+          } else {
+            toast(j.mensaje || j.error || 'No se pudo crear el pedido', 'err');
+          }
+        } catch {
+          toast('Error de red al crear el pedido ❌', 'err');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

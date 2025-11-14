@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Contacto</title>
+  <link rel="stylesheet" href="./recursos/estilos.css">
+  <script src="./recursos/interfaz.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Abarrotes en Línea</h1>
+    <nav>
+      <div class="nav-links">
+        <a href="/abarrotes/publico/">Inicio</a>
+        <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+        <a href="/abarrotes/publico/venta.html">Venta</a>
+        <a href="/abarrotes/publico/pedidos/carrito.html">Carrito</a>
+        <a href="/abarrotes/publico/contacto.html">Contacto</a>
+        <div class="dropdown">
+          <button class="dropbtn">Usuario ▾</button>
+          <div class="dropdown-menu">
+            <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+            <a href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+            <a href="/abarrotes/publico/pedidos/misPedidos.html">Mis pedidos</a>
+            <a href="#" id="btnSalir">Salir</a>
+          </div>
+        </div>
+        <span id="rolUsuario" class="badge"></span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Contacto</h2>
+      <form id="formContacto" class="form-grid">
+        <label for="inpCorreo">Correo
+          <input id="inpCorreo" name="correo" type="email" required>
+        </label>
+        <label for="txtComentarios">Comentarios
+          <textarea id="txtComentarios" name="comentarios" rows="5" required></textarea>
+        </label>
+        <div class="toolbar">
+          <button type="submit">Enviar</button>
+          <button type="button" id="btnCancelar" class="secondary">Cancelar</button>
+        </div>
+      </form>
+      <pre id="salida" class="code-block"></pre>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      configurarSesionUI('rolUsuario','btnSalir','/abarrotes/publico/');
+      initDropdowns();
+      mostrarUsuarioEnBarra('rolUsuario');
+
+      const form = document.getElementById('formContacto');
+      const salida = document.getElementById('salida');
+      const btnCancelar = document.getElementById('btnCancelar');
+
+      function emailValido(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s||'').trim()); }
+
+      btnCancelar.addEventListener('click', ()=> form.reset());
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const datos = Object.fromEntries(new FormData(form).entries());
+        if (!emailValido(datos.correo)) { toast('Correo no válido','warn'); return; }
+        if (!datos.comentarios || String(datos.comentarios).trim().length < 5) { toast('Escribe al menos 5 caracteres','warn'); return; }
+
+        try {
+          const r = await fetch('/abarrotes/api/contacto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+          });
+          const j = await r.json();
+          salida.textContent = JSON.stringify(j, null, 2);
+          if (r.status === 201) {
+            toast('Mensaje enviado ✅','ok');
+            form.reset();
+          } else {
+            toast(j.mensaje || j.error || 'No se pudo enviar','err');
+          }
+        } catch {
+          toast('Error de red al enviar ❌','err');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

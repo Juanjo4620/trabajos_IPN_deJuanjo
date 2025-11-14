@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <title>Productos</title>
+  <link rel="stylesheet" href="../recursos/estilos.css">
+  <script src="../recursos/interfaz.js" defer></script>
+</head>
+
+<body>
+  <header>
+    <h1>Abarrotes en Línea</h1>
+    <nav>
+      <div class="nav-links">
+        <a href="/abarrotes/publico/">Inicio</a>
+        <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+        <a href="/abarrotes/publico/venta.html">Venta</a>
+        <a href="/abarrotes/publico/pedidos/carrito.html">
+          Carrito <span id="carritoCount" class="badge"></span>
+        </a>
+        <a href="/abarrotes/publico/contacto.html">Contacto</a>
+
+        <div class="dropdown">
+          <button class="dropbtn">Usuario ▾</button>
+          <div class="dropdown-menu">
+            <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+            <a href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+            <a href="/abarrotes/publico/pedidos/misPedidos.html">Mis pedidos</a>
+            <a href="#" id="btnSalir">Salir</a>
+          </div>
+        </div>
+
+        <span id="rolUsuario" class="badge"></span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Productos</h2>
+
+      <form id="formBusqueda" class="form-grid">
+        <input name="q" placeholder="Buscar por nombre/categoría">
+        <input name="precio_minimo" type="number" step="0.01" placeholder="Precio mín">
+        <input name="precio_maximo" type="number" step="0.01" placeholder="Precio máx">
+        <button>Buscar</button>
+      </form>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Existencias</th>
+              <th>Categoría</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sesión + navegación (solo desktop)
+      configurarSesionUI('rolUsuario', 'btnSalir', '/abarrotes/publico/');
+      initDropdowns();
+      mostrarUsuarioEnBarra('rolUsuario');
+
+      // Página pública: si hay sesión, activar temporizador (60 s)
+      iniciarTemporizadorInactividad(60000);
+
+      const cuerpo = document.getElementById('filas');
+      const form = document.getElementById('formBusqueda');
+      const carritoCount = document.getElementById('carritoCount');
+
+      // --- Carrito (LocalStorage) ---
+      function leerCarrito() {
+        try { return JSON.parse(localStorage.getItem('carrito') || '[]'); }
+        catch { return []; }
+      }
+      function guardarCarrito(items) {
+        localStorage.setItem('carrito', JSON.stringify(items));
+      }
+      function actualizarContadorCarrito() {
+        const n = leerCarrito().reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
+        if (carritoCount) carritoCount.textContent = n > 0 ? n : '';
+      }
+      function agregarAlCarrito(id, nombre, precio) {
+        const items = leerCarrito();
+        const idx = items.findIndex(i => i.producto_id === id);
+        if (idx >= 0) items[idx].cantidad += 1;
+        else items.push({ producto_id: id, nombre, precio: Number(precio), cantidad: 1 });
+        guardarCarrito(items);
+        actualizarContadorCarrito();
+        toast?.('Agregado al carrito 🛒', 'ok');
+      }
+      // Sincronizar contador si se modifica el carrito en otra pestaña
+      window.addEventListener('storage', (e) => { if (e.key === 'carrito') actualizarContadorCarrito(); });
+
+      // --- Cargar productos ---
+      async function cargar(parametros = '') {
+        const r = await fetch('/abarrotes/api/productos' + parametros);
+        const lista = await r.json();
+        const rol = obtenerRol(); // de interfaz.js
+
+        cuerpo.innerHTML = (Array.isArray(lista) ? lista : []).map(p => `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.nombre}</td>
+            <td>${Number(p.precio).toFixed(2)}</td>
+            <td>${p.existencias}</td>
+            <td>${p.categoria ?? ''}</td>
+            <td>
+              ${rol === 'tiendero'
+            ? `<a href="./editar.html?id=${p.id}" class="btn-small">Editar</a>`
+            : `<button class="btn-small btn-agregar"
+                               data-id="${p.id}"
+                               data-nombre="${encodeURIComponent(p.nombre)}"
+                               data-precio="${p.precio}">
+                       Agregar
+                     </button>`
+          }
+            </td>
+          </tr>
+        `).join('');
+
+        actualizarContadorCarrito();
+      }
+
+      // Búsqueda: construimos querystring con los nombres que espera la API
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const search = new URLSearchParams(new FormData(form)).toString();
+        cargar(search ? '?' + search : '');
+      });
+
+      // Delegación de clic para "Agregar"
+      cuerpo.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-agregar');
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        const nombre = decodeURIComponent(btn.dataset.nombre || '');
+        const precio = Number(btn.dataset.precio);
+        agregarAlCarrito(id, nombre, precio);
+      });
+
+      // Init
+      cargar();
+      actualizarContadorCarrito();
+    });
+  </script>
+</body>
+
+</html>

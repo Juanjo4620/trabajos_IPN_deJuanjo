@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <title>Carrito</title>
+  <link rel="stylesheet" href="../recursos/estilos.css">
+  <script src="../recursos/interfaz.js" defer></script>
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Carrito</h1>
+      <nav>
+        <div class="nav-links">
+          <a href="/abarrotes/publico/">Inicio</a>
+          <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+          <a href="/abarrotes/publico/venta.html">Venta</a>
+          <a href="/abarrotes/publico/pedidos/carrito.html">Carrito</a>
+          <a href="/abarrotes/publico/contacto.html">Contacto</a>
+
+          <div class="dropdown">
+            <button class="dropbtn">Usuario ▾</button>
+            <div class="dropdown-menu">
+              <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+              <a href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+              <a href="/abarrotes/publico/pedidos/misPedidos.html">Mis pedidos</a>
+              <a href="#" id="btnSalir">Salir</a>
+            </div>
+          </div>
+
+          <span id="rolUsuario" class="badge"></span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Mis productos</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Precio</th>
+              <th>Cantidad</th>
+              <th>Subtotal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+
+      <div class="toolbar">
+        <strong>Total: $<span id="total">0.00</span></strong>
+        <button id="btnVaciar" type="button" class="secondary">Vaciar carrito</button>
+      </div>
+
+      <form id="formCheckout" class="form-grid">
+        <label for="inpDireccion">Dirección de envío
+          <input id="inpDireccion" name="direccion_envio" placeholder="Calle #, colonia, ciudad">
+        </label>
+        <button>Confirmar compra</button>
+      </form>
+
+      <pre id="salida" class="code-block"></pre>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sesión + navegación (solo desktop)
+      configurarSesionUI('rolUsuario', 'btnSalir', '/abarrotes/publico/');
+      initDropdowns();
+      mostrarUsuarioEnBarra('rolUsuario');
+
+      // 🔒 Proteger página y activar expiración por inactividad (60 s)
+      if (!protegerPagina()) return;
+
+      // ---- Carrito helpers ----
+      function _leerCrudo() {
+        try { return JSON.parse(localStorage.getItem('carrito') || '[]'); }
+        catch { return []; }
+      }
+      function guardarCarrito(arr) { localStorage.setItem('carrito', JSON.stringify(arr)); }
+
+      // Normaliza posibles formas antiguas: {id,name,price} -> {producto_id,nombre,precio}
+      function normalizarCarrito() {
+        const crudo = _leerCrudo();
+        const norm = (Array.isArray(crudo) ? crudo : []).map(it => ({
+          producto_id: Number(it.producto_id ?? it.id),
+          nombre: String(it.nombre ?? it.name ?? ''),
+          precio: Number(it.precio ?? it.price ?? 0),
+          cantidad: Math.max(1, Number(it.cantidad ?? 1))
+        })).filter(x => x.producto_id > 0);
+        if (JSON.stringify(crudo) !== JSON.stringify(norm)) guardarCarrito(norm);
+        return norm;
+      }
+      function obtenerCarrito() { return normalizarCarrito(); }
+
+      const filas = document.getElementById('filas');
+      const totalEl = document.getElementById('total');
+      const salida = document.getElementById('salida');
+      const form = document.getElementById('formCheckout');
+      const btnVaciar = document.getElementById('btnVaciar');
+
+      function render() {
+        const items = obtenerCarrito();
+        if (!items.length) {
+          filas.innerHTML = `<tr><td colspan="5"><span class="badge">Tu carrito está vacío</span></td></tr>`;
+          totalEl.textContent = '0.00';
+          return;
+        }
+
+        let total = 0;
+        filas.innerHTML = items.map((it, i) => {
+          const sub = Number(it.precio) * Number(it.cantidad);
+          total += sub;
+          return `<tr>
+            <td>${it.nombre}</td>
+            <td>$${Number(it.precio).toFixed(2)}</td>
+            <td><input type="number" min="1" value="${it.cantidad}" data-i="${i}" class="qty" style="width:80px"></td>
+            <td>$${sub.toFixed(2)}</td>
+            <td><button type="button" data-i="${i}" class="rem secondary">Quitar</button></td>
+          </tr>`;
+        }).join('');
+        totalEl.textContent = total.toFixed(2);
+      }
+      render();
+
+      // Cambios de cantidad / quitar
+      filas.addEventListener('input', (e) => {
+        if (e.target.classList.contains('qty')) {
+          const i = +e.target.dataset.i;
+          const items = obtenerCarrito();
+          items[i].cantidad = Math.max(1, parseInt(e.target.value || '1', 10));
+          guardarCarrito(items);
+          render();
+        }
+      });
+      filas.addEventListener('click', (e) => {
+        if (e.target.classList.contains('rem')) {
+          const i = +e.target.dataset.i;
+          const items = obtenerCarrito();
+          items.splice(i, 1);
+          guardarCarrito(items);
+          render();
+        }
+      });
+
+      // Vaciar carrito (con confirmación modal)
+      btnVaciar.addEventListener('click', async () => {
+        if (!(await confirmModal('Vaciar carrito', '¿Deseas eliminar todos los productos del carrito?'))) return;
+        guardarCarrito([]);
+        render();
+        toast('Carrito vacío', 'info');
+      });
+
+      // Confirmar compra (con confirmación modal)
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = obtenerToken();
+        if (!token) { toast('Inicia sesión para comprar', 'warn'); return; }
+
+        const items = obtenerCarrito().map(it => ({ producto_id: it.producto_id, cantidad: it.cantidad }));
+        if (!items.length) { toast('Tu carrito está vacío', 'warn'); return; }
+
+        if (!(await confirmModal('Confirmar compra', '¿Deseas realizar el pedido?'))) return;
+
+        const datos = Object.fromEntries(new FormData(form).entries());
+        try {
+          const resp = await fetch('/abarrotes/api/pedidos', {
+            method: 'POST',
+            headers: headersAutenticados(),
+            body: JSON.stringify({ ...datos, items })
+          });
+          const json = await resp.json();
+          salida.textContent = JSON.stringify(json, null, 2);
+
+          if (resp.ok && (json.pedido_id || json.mensaje)) {
+            toast('Pedido realizado ✅', 'ok');
+            localStorage.removeItem('carrito');
+            if (json.pedido_id) localStorage.setItem('ultimo_pedido_id', String(json.pedido_id));
+            setTimeout(() => location.href = '/abarrotes/publico/pedidos/misPedidos.html', 900);
+          } else {
+            toast(json.mensaje || json.error || 'No se pudo realizar el pedido', 'err');
+          }
+        } catch {
+          toast('Error de red al realizar el pedido ❌', 'err');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

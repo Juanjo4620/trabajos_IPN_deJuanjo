@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Abarrotes en Línea – Demo</title>
+  <link rel="stylesheet" href="./recursos/estilos.css">
+  <script src="./recursos/interfaz.js" defer></script>
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1>Abarrotes en Línea</h1>
+      <nav>
+        <div class="nav-links">
+          <a href="/abarrotes/publico/">Inicio</a>
+          <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+          <a href="/abarrotes/publico/venta.html">Venta</a>
+          <a href="/abarrotes/publico/pedidos/carrito.html">Carrito</a>
+          <a href="/abarrotes/publico/contacto.html">Contacto</a>
+
+          <div class="dropdown">
+            <button class="dropbtn">Usuario ▾</button>
+            <div class="dropdown-menu">
+              <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+              <a href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+              <a href="/abarrotes/publico/pedidos/misPedidos.html">Mis pedidos</a>
+              <a href="#" id="btnSalir">Salir</a>
+            </div>
+          </div>
+
+          <span id="rolUsuario" class="badge"></span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Backend + Formularios</h2>
+      <p class="badge">Ambiente local</p>
+
+      <div class="toolbar">
+        <a class="link" href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+        <a class="link" href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+        <a class="link" href="/abarrotes/publico/productos/listar.html">Listar productos</a>
+        <span id="accionCrear"></span>
+      </div>
+
+      <p>API base: <code>http://localhost/abarrotes/api</code></p>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sesión + navegación
+      configurarSesionUI('rolUsuario', 'btnSalir', '/abarrotes/publico/');
+      initDropdowns();
+      mostrarUsuarioEnBarra('rolUsuario');
+
+      // Página pública: si hay sesión, activa temporizador (60 s)
+      iniciarTemporizadorInactividad(60000);
+
+      // Mostrar acción Crear solo a tiendero
+      const rol = obtenerRol();
+      const accionCrear = document.getElementById('accionCrear');
+      if (rol === 'tiendero') {
+        accionCrear.innerHTML = `<a class="link" href="/abarrotes/publico/productos/crear.html">Crear producto</a>`;
+      } else {
+        accionCrear.innerHTML = `<span class="badge">Solo tiendero puede crear</span>`;
+      }
+
+      // Mensajes demo
+      toast('Bienvenido 👋', 'info', 2000);
+      setTimeout(() => {
+        alertModal('Aviso', 'Explora el catálogo o inicia sesión para comprar.');
+      }, 900);
+    });
+  </script>
+</body>
+
+</html>

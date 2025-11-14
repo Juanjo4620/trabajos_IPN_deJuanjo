@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Editar producto</title>
+  <link rel="stylesheet" href="../recursos/estilos.css">
+  <script src="../recursos/interfaz.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Abarrotes en Línea</h1>
+    <nav>
+      <div class="nav-links">
+        <a href="/abarrotes/publico/">Inicio</a>
+        <a href="/abarrotes/publico/productos/listar.html">Productos</a>
+        <a href="/abarrotes/publico/venta.html">Venta</a>
+        <a href="/abarrotes/publico/pedidos/carrito.html">Carrito</a>
+        <a href="/abarrotes/publico/contacto.html">Contacto</a>
+
+        <div class="dropdown">
+          <button class="dropbtn">Usuario ▾</button>
+          <div class="dropdown-menu">
+            <a href="/abarrotes/publico/usuarios/registro.html">Registro</a>
+            <a href="/abarrotes/publico/usuarios/inicioSesion.html">Inicio de sesión</a>
+            <a href="/abarrotes/publico/pedidos/misPedidos.html">Mis pedidos</a>
+            <a href="#" id="btnSalir">Salir</a>
+          </div>
+        </div>
+
+        <span id="rolUsuario" class="badge"></span>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Editar / Eliminar producto</h2>
+
+      <form id="formEditar" class="form-grid">
+        <input type="hidden" name="id" />
+        <label for="inpNombre">Nombre
+          <input id="inpNombre" name="nombre" required>
+        </label>
+        <label for="inpDesc">Descripción
+          <textarea id="inpDesc" name="descripcion"></textarea>
+        </label>
+        <label for="inpPrecio">Precio
+          <input id="inpPrecio" name="precio" type="number" step="0.01" min="0" required>
+        </label>
+        <label for="inpExist">Existencias
+          <input id="inpExist" name="existencias" type="number" value="0" min="0">
+        </label>
+        <label for="inpCat">Categoría
+          <input id="inpCat" name="categoria">
+        </label>
+        <div class="toolbar">
+          <button>Guardar cambios</button>
+          <button id="btnEliminar" type="button" class="secondary">Eliminar</button>
+        </div>
+      </form>
+
+      <pre id="salida" class="code-block"></pre>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      configurarSesionUI('rolUsuario','btnSalir','/abarrotes/publico/');
+      initDropdowns();
+      mostrarUsuarioEnBarra('rolUsuario');
+
+      // 🔒 Proteger página y activar inactividad (60 s)
+      if (!protegerPagina()) return;
+
+      const salida = document.getElementById('salida');
+      const form = document.getElementById('formEditar');
+      const id = new URLSearchParams(location.search).get('id');
+      const rol = obtenerRol();
+
+      if (!id) {
+        toast('ID inválido', 'err');
+        setTimeout(()=>location.href='/abarrotes/publico/productos/listar.html', 900);
+        return;
+      }
+
+      // 🔒 Solo tiendero puede editar/eliminar
+      if (rol !== 'tiendero') {
+        form.remove();
+        document.querySelector('.card').insertAdjacentHTML(
+          'beforeend',
+          '<p class="badge">⚠️ Solo tiendero puede editar/eliminar.</p>'
+        );
+        return;
+      }
+
+      // Cargar datos del producto
+      async function cargar() {
+        try {
+          const r = await fetch(`/abarrotes/api/productos/${id}`);
+          const p = await r.json();
+          if (r.ok && p && !p.error && !p.mensaje) {
+            const mapa = { id:'id', nombre:'nombre', descripcion:'descripcion', precio:'precio', existencias:'existencias', categoria:'categoria' };
+            for (const k in mapa) if (form[mapa[k]] !== undefined) form[mapa[k]].value = (p[k] ?? '');
+          } else {
+            toast((p && (p.mensaje||p.error)) || 'No se pudo cargar el producto', 'err');
+          }
+        } catch {
+          toast('Error de red al cargar ❌', 'err');
+        }
+      }
+      cargar();
+
+      // Guardar cambios
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const datos = Object.fromEntries(new FormData(form).entries());
+        if (Number(datos.precio) < 0) { toast('El precio no puede ser negativo','warn'); return; }
+        if (Number(datos.existencias) < 0) { toast('Las existencias no pueden ser negativas','warn'); return; }
+
+        if (!(await confirmModal('Confirmar', '¿Guardar los cambios del producto?'))) return;
+
+        try {
+          const r = await fetch(`/abarrotes/api/productos/${id}`, {
+            method: 'PUT',
+            headers: headersAutenticados(),
+            body: JSON.stringify(datos)
+          });
+          const j = await r.json();
+          salida.textContent = JSON.stringify(j, null, 2);
+          if (r.ok) {
+            toast('Producto actualizado ✅', 'ok');
+          } else {
+            toast(j.mensaje || j.error || 'Error al actualizar ❌', 'err');
+          }
+        } catch {
+          toast('Error de red al actualizar ❌', 'err');
+        }
+      });
+
+      // Eliminar
+      document.getElementById('btnEliminar').addEventListener('click', async () => {
+        if (!(await confirmModal('Confirmar', '¿Eliminar producto?'))) return;
+        try {
+          const r = await fetch(`/abarrotes/api/productos/${id}`, {
+            method: 'DELETE',
+            headers: headersAutenticados()
+          });
+          const j = await r.json();
+          salida.textContent = JSON.stringify(j, null, 2);
+          if (r.ok) {
+            toast('Producto eliminado 🗑️', 'ok');
+            setTimeout(()=>location.href='/abarrotes/publico/productos/listar.html', 1200);
+          } else {
+            toast(j.mensaje || j.error || 'Error al eliminar ❌', 'err');
+          }
+        } catch {
+          toast('Error de red al eliminar ❌', 'err');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
